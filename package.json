@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "electron-builder build",
+    "build": "electron-builder build --win --x64",
     "pack": "electron-builder --dir"
   },
   "author": "",
@@ -33,15 +33,14 @@
     ],
     "win": {
       "icon": "assets/icon.ico",
-      "target": ["nsis"]
+      "target": ["nsis"],
+      "signingHashAlgorithms": null,
+      "signAndEditExecutable": false
     },
-    "linux": {
-      "icon": "assets/icon.png",
-      "target": ["AppImage", "deb"]
-    },
-    "mac": {
-      "icon": "assets/icon.icns",
-      "target": ["dmg"]
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
     }
   }
 }
