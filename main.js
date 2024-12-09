@@ -2,32 +2,52 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 require('dotenv').config();
 
-function createWindow() {
-  const win = new BrowserWindow({
-    width: 900,
-    height: 700,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    },
-    autoHideMenuBar: true
-  });
+let mainWindow;
 
-  win.loadFile('index.html');
+function createWindow() {
+    mainWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        resizable: false,
+        frame: false,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        },
+        backgroundColor: '#1E1E2E'
+    });
+
+    mainWindow.loadFile('index.html');
+    mainWindow.removeMenu();
 }
 
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+// Controles da janela
+ipcMain.on('minimize-window', () => {
+    mainWindow.minimize();
 });
 
+ipcMain.on('maximize-window', () => {
+    if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+    } else {
+        mainWindow.maximize();
+    }
+});
+
+ipcMain.on('close-window', () => {
+    mainWindow.close();
+});
+
+app.whenReady().then(createWindow);
+
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
+});
+
+app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+    }
 });
