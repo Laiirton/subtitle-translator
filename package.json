@@ -23,7 +23,8 @@
     "appId": "com.subtitle.translator",
     "productName": "Subtitle Translator",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "assets"
     },
     "extraResources": [
       {
@@ -32,7 +33,7 @@
       }
     ],
     "win": {
-      "icon": "assets/icon.ico",
+      "icon": "./assets/icon.ico",
       "target": ["nsis"],
       "signingHashAlgorithms": null,
       "signAndEditExecutable": false
@@ -40,7 +41,10 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "installerIcon": "./assets/icon.ico",
+      "uninstallerIcon": "./assets/icon.ico",
+      "uninstallDisplayName": "Subtitle Translator"
     }
   }
 }
