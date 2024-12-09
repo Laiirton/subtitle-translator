@@ -16,7 +16,8 @@ function createWindow() {
             nodeIntegration: true,
             contextIsolation: false
         },
-        backgroundColor: '#1E1E2E'
+        backgroundColor: '#1E1E2E',
+        icon: path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png')
     });
 
     mainWindow.loadFile('index.html');
