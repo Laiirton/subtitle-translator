@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
+const { ipcRenderer } = require('electron');
 
 let selectedFile = null;
 
@@ -126,3 +127,16 @@ function showStatus(message, type) {
     statusElement.textContent = message;
     statusElement.className = type;
 }
+
+// Controles da janela
+document.getElementById('minimizeBtn').addEventListener('click', () => {
+    ipcRenderer.send('minimize-window');
+});
+
+document.getElementById('maximizeBtn').addEventListener('click', () => {
+    ipcRenderer.send('maximize-window');
+});
+
+document.getElementById('closeBtn').addEventListener('click', () => {
+    ipcRenderer.send('close-window');
+});
