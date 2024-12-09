@@ -16,41 +16,57 @@ async function translateSubtitle() {
     }
 
     const targetLanguage = document.getElementById('targetLanguage').value;
-    const statusElement = document.getElementById('status');
+    const processingSection = document.getElementById('processingSection');
+    const progressText = document.getElementById('progressText');
+    const translationPreview = document.getElementById('translationPreview');
     
     try {
-        showStatus('Translating...', '');
+        processingSection.style.display = 'block';
+        translationPreview.style.display = 'block';
+        translationPreview.textContent = '';
+        showStatus('', '');
         
         const fileContent = await readFile(selectedFile);
-        const translatedContent = await translateContent(fileContent, targetLanguage);
+        const subtitleBlocks = parseSubtitleBlocks(fileContent);
+        
+        progressText.textContent = `Processing 0/${subtitleBlocks.length} subtitle blocks...`;
+        
+        let translatedContent = '';
+        for (let i = 0; i < subtitleBlocks.length; i++) {
+            const block = subtitleBlocks[i];
+            const translatedBlock = await translateBlock(block, targetLanguage, i + 1);
+            translatedContent += translatedBlock + '\n\n';
+            
+            // Update progress and preview
+            progressText.textContent = `Processing ${i + 1}/${subtitleBlocks.length} subtitle blocks...`;
+            translationPreview.textContent = translatedContent;
+            translationPreview.scrollTop = translationPreview.scrollHeight;
+        }
         
         // Save the translated file
         const saveFilePath = selectedFile.path.replace('.srt', `_${targetLanguage}.srt`);
-        fs.writeFileSync(saveFilePath, translatedContent);
+        fs.writeFileSync(saveFilePath, translatedContent.trim());
         
+        progressText.textContent = 'Translation completed!';
         showStatus(`Translation completed! File saved as: ${saveFilePath}`, 'success');
     } catch (error) {
         showStatus(`Translation error: ${error.message}`, 'error');
+        progressText.textContent = 'Translation failed';
     }
 }
 
-function readFile(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = (e) => reject(e);
-        reader.readAsText(file);
-    });
+function parseSubtitleBlocks(content) {
+    return content.trim().split('\n\n').filter(block => block.trim());
 }
 
-async function translateContent(content, targetLanguage) {
+async function translateBlock(block, targetLanguage, blockNumber) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const generationConfig = {
-        temperature: 1,
-        topP: 0.95,
-        topK: 64,
+        temperature: 0.7,
+        topP: 0.8,
+        topK: 40,
         maxOutputTokens: 8192,
     };
 
@@ -66,18 +82,43 @@ async function translateContent(content, targetLanguage) {
         'zh': 'Chinese'
     };
 
+    // Split the block into components
+    const lines = block.split('\n');
+    const index = lines[0];
+    const timing = lines[1];
+    const subtitleText = lines.slice(2).join('\n');
+
     const chatSession = model.startChat({
         generationConfig,
         history: [
             {
                 role: "user",
-                parts: [{ text: `Translate this subtitle to ${languageMap[targetLanguage]}. Keep the exact SRT format, including sequence numbers and timestamps:` }],
+                parts: [{ text: `You are a professional subtitle translator. Translate the following subtitle text to ${languageMap[targetLanguage]}. 
+                Consider the context and maintain the natural flow of dialogue. The translation should sound natural and preserve the original meaning and tone.
+                Only translate the subtitle text, keep the timing and index exactly as is.
+
+                Original subtitle block:
+                Index: ${index}
+                Timing: ${timing}
+                Text: ${subtitleText}` }],
             }
         ],
     });
 
-    const result = await chatSession.sendMessage(content);
-    return result.response.text();
+    const result = await chatSession.sendMessage(subtitleText);
+    const translatedText = result.response.text().trim();
+
+    // Reconstruct the subtitle block with original timing
+    return `${index}\n${timing}\n${translatedText}`;
+}
+
+function readFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e);
+        reader.readAsText(file);
+    });
 }
 
 function showStatus(message, type) {
