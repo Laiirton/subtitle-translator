@@ -45,7 +45,7 @@ function readFile(file) {
 
 async function translateContent(content, targetLanguage) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const generationConfig = {
         temperature: 1,
