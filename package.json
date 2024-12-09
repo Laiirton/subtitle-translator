@@ -5,21 +5,32 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "electron-builder build",
+    "pack": "electron-builder --dir"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.1.3",
-    "electron": "^28.0.0",
     "dotenv": "^16.3.1"
   },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
   "build": {
-    "appId": "com.your.app",
+    "appId": "com.subtitle.translator",
     "productName": "Subtitle Translator",
     "directories": {
       "output": "dist"
     },
+    "extraResources": [
+      {
+        "from": "env.prod",
+        "to": ".env"
+      }
+    ],
     "win": {
       "icon": "assets/icon.ico",
       "target": ["nsis"]
