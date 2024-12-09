@@ -70,3 +70,4 @@ build/
 latest-linux.yml
 latest-mac.yml
 latest.yml
+env.prod
