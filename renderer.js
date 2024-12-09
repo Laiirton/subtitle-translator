@@ -1,6 +1,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const { ipcRenderer } = require('electron');
+const path = require('path');
 
 let selectedFile = null;
 
@@ -12,7 +13,7 @@ document.getElementById('srtFile').addEventListener('change', (event) => {
 
 async function translateSubtitle() {
     if (!selectedFile) {
-        showStatus('Please select an SRT file', 'error');
+        showStatus('Por favor, selecione um arquivo SRT', 'error');
         return;
     }
 
@@ -22,6 +23,17 @@ async function translateSubtitle() {
     const translationPreview = document.getElementById('translationPreview');
     
     try {
+        // Primeiro, solicita ao usuário onde salvar o arquivo
+        const suggestedName = selectedFile.name.replace('.srt', `_${targetLanguage}.srt`);
+        const savePath = await ipcRenderer.invoke('show-save-dialog', {
+            defaultPath: suggestedName
+        });
+        
+        if (!savePath) {
+            showStatus('Operação cancelada pelo usuário', 'error');
+            return;
+        }
+
         processingSection.style.display = 'block';
         translationPreview.style.display = 'block';
         translationPreview.textContent = '';
@@ -30,36 +42,40 @@ async function translateSubtitle() {
         const fileContent = await readFile(selectedFile);
         const subtitleBlocks = parseSubtitleBlocks(fileContent);
         
-        progressText.textContent = `Processing 0/${subtitleBlocks.length} subtitle blocks...`;
-        
         let translatedContent = '';
         for (let i = 0; i < subtitleBlocks.length; i++) {
             const block = subtitleBlocks[i];
             progressText.textContent = `Translating subtitle ${i + 1}/${subtitleBlocks.length}...`;
             
-            // Show current block being translated
+            // Mostrar o bloco atual sendo traduzido
             const lines = block.split('\n');
-            const currentText = lines.slice(2).join('\n');
-            translationPreview.textContent = `${lines[0]}\n${lines[1]}\n${currentText}\n`;
+            const blockNumber = lines[0];
+            const timing = lines[1];
+            const text = lines.slice(2).join('\n');
+            
+            // Atualiza o preview com o bloco atual
+            const currentPreview = `${blockNumber}\n${timing}\n${text}`;
+            translationPreview.textContent = currentPreview;
             translationPreview.scrollTop = translationPreview.scrollHeight;
 
             const translatedBlock = await translateBlock(block, targetLanguage, i + 1);
-            translatedContent += translatedBlock + '\n\n';
+            if (translatedContent) {
+                translatedContent += '\n\n';
+            }
+            translatedContent += translatedBlock;
             
-            // Update progress and preview
-            progressText.textContent = `Translating subtitle ${i + 1}/${subtitleBlocks.length}...`;
+            // Atualiza o preview com todo o conteúdo traduzido
             translationPreview.textContent = translatedContent;
             translationPreview.scrollTop = translationPreview.scrollHeight;
         }
         
-        // Save the translated file
-        const saveFilePath = selectedFile.path.replace('.srt', `_${targetLanguage}.srt`);
-        fs.writeFileSync(saveFilePath, translatedContent.trim());
+        // Salva o arquivo traduzido no local escolhido pelo usuário
+        fs.writeFileSync(savePath, translatedContent);
         
         progressText.textContent = 'Translation completed!';
-        showStatus(`Translation completed! File saved as: ${saveFilePath}`, 'success');
+        showStatus(`Tradução concluída! Arquivo salvo em: ${savePath}`, 'success');
     } catch (error) {
-        showStatus(`Translation error: ${error.message}`, 'error');
+        showStatus(`Erro na tradução: ${error.message}`, 'error');
         progressText.textContent = 'Translation failed';
     }
 }
