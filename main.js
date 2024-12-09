@@ -23,7 +23,7 @@ function createWindow() {
             contextIsolation: false
         },
         backgroundColor: '#1E1E2E',
-        icon: path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png')
+        icon: path.join(__dirname, './assets/icon.ico')
     });
 
     mainWindow.loadFile('index.html');
