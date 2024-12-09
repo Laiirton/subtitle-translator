@@ -11,9 +11,44 @@ document.getElementById('srtFile').addEventListener('change', (event) => {
     document.getElementById('translateButton').disabled = !selectedFile;
 });
 
+function showToast(message, type = 'success') {
+    // Remove qualquer toast existente
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) {
+        existingToast.remove();
+    }
+
+    // Criar novo toast
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+
+    // Ícone baseado no tipo
+    const icon = document.createElement('span');
+    icon.className = 'toast-icon';
+    icon.textContent = type === 'success' ? '✓' : '✕';
+    
+    // Mensagem
+    const messageElement = document.createElement('span');
+    messageElement.className = 'toast-message';
+    messageElement.textContent = message;
+
+    toast.appendChild(icon);
+    toast.appendChild(messageElement);
+    document.body.appendChild(toast);
+
+    // Remover o toast após 5 segundos
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out forwards';
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 5000);
+}
+
 async function translateSubtitle() {
     if (!selectedFile) {
         showStatus('Por favor, selecione um arquivo SRT', 'error');
+        showToast('Por favor, selecione um arquivo SRT', 'error');
         return;
     }
 
@@ -40,51 +75,44 @@ async function translateSubtitle() {
         showStatus('', '');
         
         const fileContent = await readFile(selectedFile);
-        const subtitleBlocks = parseSubtitleBlocks(fileContent);
+        progressText.textContent = 'Traduzindo legenda...';
         
-        let translatedContent = '';
-        for (let i = 0; i < subtitleBlocks.length; i++) {
-            const block = subtitleBlocks[i];
-            progressText.textContent = `Translating subtitle ${i + 1}/${subtitleBlocks.length}...`;
-            
-            // Mostrar o bloco atual sendo traduzido
-            const lines = block.split('\n');
-            const blockNumber = lines[0];
-            const timing = lines[1];
-            const text = lines.slice(2).join('\n');
-            
-            // Atualiza o preview com o bloco atual
-            const currentPreview = `${blockNumber}\n${timing}\n${text}`;
-            translationPreview.textContent = currentPreview;
-            translationPreview.scrollTop = translationPreview.scrollHeight;
-
-            const translatedBlock = await translateBlock(block, targetLanguage, i + 1);
-            if (translatedContent) {
-                translatedContent += '\n\n';
-            }
-            translatedContent += translatedBlock;
-            
-            // Atualiza o preview com todo o conteúdo traduzido
-            translationPreview.textContent = translatedContent;
-            translationPreview.scrollTop = translationPreview.scrollHeight;
-        }
+        // Atualiza o preview com o conteúdo original
+        translationPreview.textContent = fileContent;
+        
+        // Traduz todo o conteúdo de uma vez
+        const translatedContent = await translateContent(fileContent, targetLanguage);
+        
+        // Atualiza o preview com o conteúdo traduzido
+        translationPreview.textContent = translatedContent;
+        translationPreview.scrollTop = translationPreview.scrollHeight;
         
         // Salva o arquivo traduzido no local escolhido pelo usuário
         fs.writeFileSync(savePath, translatedContent);
         
         progressText.textContent = 'Translation completed!';
         showStatus(`Tradução concluída! Arquivo salvo em: ${savePath}`, 'success');
+        showToast('Tradução concluída com sucesso!', 'success');
+
+        // Envia notificação ao usuário
+        ipcRenderer.send('show-notification', {
+            title: 'Professional Subtitle Translator',
+            body: `Sua legenda foi traduzida com sucesso!\nSalva em: ${path.basename(savePath)}`
+        });
     } catch (error) {
         showStatus(`Erro na tradução: ${error.message}`, 'error');
         progressText.textContent = 'Translation failed';
+        showToast('Erro ao traduzir a legenda', 'error');
+
+        // Notificação de erro
+        ipcRenderer.send('show-notification', {
+            title: 'Professional Subtitle Translator',
+            body: 'Ocorreu um erro ao traduzir a legenda. Por favor, tente novamente.'
+        });
     }
 }
 
-function parseSubtitleBlocks(content) {
-    return content.trim().split('\n\n').filter(block => block.trim());
-}
-
-async function translateBlock(block, targetLanguage, blockNumber) {
+async function translateContent(content, targetLanguage) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -104,37 +132,37 @@ async function translateBlock(block, targetLanguage, blockNumber) {
         'it': 'Italian',
         'ja': 'Japanese',
         'ko': 'Korean',
-        'zh': 'Chinese'
+        'zh': 'Chinese',
+        'ru': 'Russian',
+        'ar': 'Arabic',
+        'hi': 'Hindi',
+        'tr': 'Turkish',
+        'nl': 'Dutch'
     };
-
-    // Split the block into components
-    const lines = block.split('\n');
-    const index = lines[0];
-    const timing = lines[1];
-    const subtitleText = lines.slice(2).join('\n');
 
     const chatSession = model.startChat({
         generationConfig,
         history: [
             {
                 role: "user",
-                parts: [{ text: `You are a professional subtitle translator. Translate the following subtitle text to ${languageMap[targetLanguage]}. 
-                Consider the context and maintain the natural flow of dialogue. The translation should sound natural and preserve the original meaning and tone.
-                Only translate the subtitle text, keep the timing and index exactly as is.
-
-                Original subtitle block:
-                Index: ${index}
-                Timing: ${timing}
-                Text: ${subtitleText}` }],
+                parts: [{ text: `You are a professional subtitle translator. Translate the following subtitle file to ${languageMap[targetLanguage]}. 
+                Keep all timecodes and subtitle numbers exactly as they are.
+                Maintain the same format and structure of the SRT file.
+                Only translate the actual subtitle text, keeping all technical aspects of the file intact.
+                Ensure natural and contextually appropriate translations.
+                
+                Original subtitle file:
+                ${content}` }],
             }
         ],
     });
 
-    const result = await chatSession.sendMessage(subtitleText);
-    const translatedText = result.response.text().trim();
+    const result = await chatSession.sendMessage(content);
+    return result.response.text().trim();
+}
 
-    // Reconstruct the subtitle block with original timing
-    return `${index}\n${timing}\n${translatedText}`;
+function parseSubtitleBlocks(content) {
+    return content.trim().split('\n\n').filter(block => block.trim());
 }
 
 function readFile(file) {
@@ -164,3 +192,30 @@ document.getElementById('maximizeBtn').addEventListener('click', () => {
 document.getElementById('closeBtn').addEventListener('click', () => {
     ipcRenderer.send('close-window');
 });
+
+// Detectar e selecionar o idioma do sistema
+function detectSystemLanguage() {
+    const systemLanguage = navigator.language;
+    const languageSelect = document.getElementById('targetLanguage');
+    const options = languageSelect.options;
+    
+    // Procura uma correspondência exata primeiro
+    for (let option of options) {
+        if (option.value.toLowerCase() === systemLanguage.toLowerCase()) {
+            languageSelect.value = option.value;
+            return;
+        }
+    }
+    
+    // Se não encontrar correspondência exata, procura pelo idioma base
+    const baseLanguage = systemLanguage.split('-')[0];
+    for (let option of options) {
+        if (option.value.toLowerCase().startsWith(baseLanguage.toLowerCase())) {
+            languageSelect.value = option.value;
+            return;
+        }
+    }
+}
+
+// Chamar a função quando a página carregar
+document.addEventListener('DOMContentLoaded', detectSystemLanguage);
