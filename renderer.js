@@ -5,13 +5,13 @@ let selectedFile = null;
 
 document.getElementById('srtFile').addEventListener('change', (event) => {
     selectedFile = event.target.files[0];
-    document.getElementById('fileName').textContent = selectedFile ? selectedFile.name : 'Nenhum arquivo selecionado';
+    document.getElementById('fileName').textContent = selectedFile ? selectedFile.name : 'No file selected';
     document.getElementById('translateButton').disabled = !selectedFile;
 });
 
 async function translateSubtitle() {
     if (!selectedFile) {
-        showStatus('Por favor, selecione um arquivo SRT', 'error');
+        showStatus('Please select an SRT file', 'error');
         return;
     }
 
@@ -19,7 +19,7 @@ async function translateSubtitle() {
     const statusElement = document.getElementById('status');
     
     try {
-        showStatus('Traduzindo...', '');
+        showStatus('Translating...', '');
         
         const fileContent = await readFile(selectedFile);
         const translatedContent = await translateContent(fileContent, targetLanguage);
@@ -28,9 +28,9 @@ async function translateSubtitle() {
         const saveFilePath = selectedFile.path.replace('.srt', `_${targetLanguage}.srt`);
         fs.writeFileSync(saveFilePath, translatedContent);
         
-        showStatus(`Tradução concluída! Arquivo salvo como: ${saveFilePath}`, 'success');
+        showStatus(`Translation completed! File saved as: ${saveFilePath}`, 'success');
     } catch (error) {
-        showStatus(`Erro na tradução: ${error.message}`, 'error');
+        showStatus(`Translation error: ${error.message}`, 'error');
     }
 }
 
@@ -55,15 +55,15 @@ async function translateContent(content, targetLanguage) {
     };
 
     const languageMap = {
-        'pt-BR': 'português do Brasil',
-        'en': 'inglês',
-        'es': 'espanhol',
-        'fr': 'francês',
-        'de': 'alemão',
-        'it': 'italiano',
-        'ja': 'japonês',
-        'ko': 'coreano',
-        'zh': 'chinês'
+        'en': 'English',
+        'es': 'Spanish',
+        'pt-BR': 'Brazilian Portuguese',
+        'fr': 'French',
+        'de': 'German',
+        'it': 'Italian',
+        'ja': 'Japanese',
+        'ko': 'Korean',
+        'zh': 'Chinese'
     };
 
     const chatSession = model.startChat({
@@ -71,7 +71,7 @@ async function translateContent(content, targetLanguage) {
         history: [
             {
                 role: "user",
-                parts: [{ text: `Traduza esta legenda para ${languageMap[targetLanguage]}. Mantenha o formato SRT exato, incluindo números de sequência e timestamps:` }],
+                parts: [{ text: `Translate this subtitle to ${languageMap[targetLanguage]}. Keep the exact SRT format, including sequence numbers and timestamps:` }],
             }
         ],
     });
