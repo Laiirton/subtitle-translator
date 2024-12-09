@@ -1,6 +1,12 @@
 const { app, BrowserWindow, ipcMain, dialog, Notification } = require('electron');
 const path = require('path');
-require('dotenv').config();
+
+// Configuração do .env para desenvolvimento e produção
+if (app.isPackaged) {
+    require('dotenv').config({ path: path.join(process.resourcesPath, '.env') });
+} else {
+    require('dotenv').config();
+}
 
 let mainWindow;
 
