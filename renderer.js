@@ -47,8 +47,8 @@ function showToast(message, type = 'success') {
 
 async function translateSubtitle() {
     if (!selectedFile) {
-        showStatus('Por favor, selecione um arquivo SRT', 'error');
-        showToast('Por favor, selecione um arquivo SRT', 'error');
+        showStatus('Please select an SRT file', 'error');
+        showToast('Please select an SRT file', 'error');
         return;
     }
 
@@ -75,7 +75,7 @@ async function translateSubtitle() {
         showStatus('', '');
         
         const fileContent = await readFile(selectedFile);
-        progressText.textContent = 'Traduzindo legenda...';
+        progressText.textContent = 'Translating subtitle...';
         
         // Atualiza o preview com o conteúdo original
         translationPreview.textContent = fileContent;
@@ -91,23 +91,23 @@ async function translateSubtitle() {
         fs.writeFileSync(savePath, translatedContent);
         
         progressText.textContent = 'Translation completed!';
-        showStatus(`Tradução concluída! Arquivo salvo em: ${savePath}`, 'success');
-        showToast('Tradução concluída com sucesso!', 'success');
+        showStatus(`Translation completed! File saved at: ${savePath}`, 'success');
+        showToast('Translation completed successfully!', 'success');
 
         // Envia notificação ao usuário
         ipcRenderer.send('show-notification', {
             title: 'Professional Subtitle Translator',
-            body: `Sua legenda foi traduzida com sucesso!\nSalva em: ${path.basename(savePath)}`
+            body: `Your subtitle has been translated successfully!\nSaved at: ${path.basename(savePath)}`
         });
     } catch (error) {
-        showStatus(`Erro na tradução: ${error.message}`, 'error');
+        showStatus(`Translation error: ${error.message}`, 'error');
         progressText.textContent = 'Translation failed';
-        showToast('Erro ao traduzir a legenda', 'error');
+        showToast('Error translating subtitle', 'error');
 
         // Notificação de erro
         ipcRenderer.send('show-notification', {
             title: 'Professional Subtitle Translator',
-            body: 'Ocorreu um erro ao traduzir a legenda. Por favor, tente novamente.'
+            body: 'An error occurred while translating the subtitle. Please try again.'
         });
     }
 }
