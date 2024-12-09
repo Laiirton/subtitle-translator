@@ -12,7 +12,7 @@ document.getElementById('srtFile').addEventListener('change', (event) => {
 
 async function translateSubtitle() {
     if (!selectedFile) {
-        showStatus('Please select an SRT file', 'error');
+        showStatus('Por favor, selecione um arquivo SRT', 'error');
         return;
     }
 
@@ -30,16 +30,24 @@ async function translateSubtitle() {
         const fileContent = await readFile(selectedFile);
         const subtitleBlocks = parseSubtitleBlocks(fileContent);
         
-        progressText.textContent = `Processing 0/${subtitleBlocks.length} subtitle blocks...`;
+        progressText.textContent = `Processando 0/${subtitleBlocks.length} blocos de legendas...`;
         
         let translatedContent = '';
         for (let i = 0; i < subtitleBlocks.length; i++) {
             const block = subtitleBlocks[i];
+            progressText.textContent = `Traduzindo legenda ${i + 1}/${subtitleBlocks.length}...`;
+            
+            // Mostrar o bloco atual sendo traduzido
+            const lines = block.split('\n');
+            const currentText = lines.slice(2).join('\n');
+            translationPreview.textContent = `${lines[0]}\n${lines[1]}\n${currentText}\n`;
+            translationPreview.scrollTop = translationPreview.scrollHeight;
+
             const translatedBlock = await translateBlock(block, targetLanguage, i + 1);
             translatedContent += translatedBlock + '\n\n';
             
             // Update progress and preview
-            progressText.textContent = `Processing ${i + 1}/${subtitleBlocks.length} subtitle blocks...`;
+            progressText.textContent = `Traduzindo legenda ${i + 1}/${subtitleBlocks.length}...`;
             translationPreview.textContent = translatedContent;
             translationPreview.scrollTop = translationPreview.scrollHeight;
         }
