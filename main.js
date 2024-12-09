@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Notification } = require('electron');
 const path = require('path');
 require('dotenv').config();
 
@@ -6,10 +6,10 @@ let mainWindow;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 1024,
-        height: 768,
-        minWidth: 800,
-        minHeight: 600,
+        width: 900,
+        height: 700,
+        minWidth: 600,
+        minHeight: 500,
         resizable: true,
         frame: false,
         webPreferences: {
@@ -52,6 +52,15 @@ ipcMain.handle('show-save-dialog', async (event, options) => {
     });
     
     return result.canceled ? null : result.filePath;
+});
+
+// Handler para notificações
+ipcMain.on('show-notification', (event, options) => {
+    new Notification({
+        title: options.title,
+        body: options.body,
+        icon: path.join(__dirname, 'icon.png')
+    }).show();
 });
 
 app.whenReady().then(createWindow);
