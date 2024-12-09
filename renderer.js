@@ -12,7 +12,7 @@ document.getElementById('srtFile').addEventListener('change', (event) => {
 
 async function translateSubtitle() {
     if (!selectedFile) {
-        showStatus('Por favor, selecione um arquivo SRT', 'error');
+        showStatus('Please select an SRT file', 'error');
         return;
     }
 
@@ -30,14 +30,14 @@ async function translateSubtitle() {
         const fileContent = await readFile(selectedFile);
         const subtitleBlocks = parseSubtitleBlocks(fileContent);
         
-        progressText.textContent = `Processando 0/${subtitleBlocks.length} blocos de legendas...`;
+        progressText.textContent = `Processing 0/${subtitleBlocks.length} subtitle blocks...`;
         
         let translatedContent = '';
         for (let i = 0; i < subtitleBlocks.length; i++) {
             const block = subtitleBlocks[i];
-            progressText.textContent = `Traduzindo legenda ${i + 1}/${subtitleBlocks.length}...`;
+            progressText.textContent = `Translating subtitle ${i + 1}/${subtitleBlocks.length}...`;
             
-            // Mostrar o bloco atual sendo traduzido
+            // Show current block being translated
             const lines = block.split('\n');
             const currentText = lines.slice(2).join('\n');
             translationPreview.textContent = `${lines[0]}\n${lines[1]}\n${currentText}\n`;
@@ -47,7 +47,7 @@ async function translateSubtitle() {
             translatedContent += translatedBlock + '\n\n';
             
             // Update progress and preview
-            progressText.textContent = `Traduzindo legenda ${i + 1}/${subtitleBlocks.length}...`;
+            progressText.textContent = `Translating subtitle ${i + 1}/${subtitleBlocks.length}...`;
             translationPreview.textContent = translatedContent;
             translationPreview.scrollTop = translationPreview.scrollHeight;
         }
@@ -136,7 +136,7 @@ function showStatus(message, type) {
     statusElement.className = type;
 }
 
-// Controles da janela
+// Window controls
 document.getElementById('minimizeBtn').addEventListener('click', () => {
     ipcRenderer.send('minimize-window');
 });
