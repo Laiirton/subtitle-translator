@@ -30,6 +30,11 @@ function createWindow() {
     mainWindow.removeMenu();
 }
 
+// Configuração de logs para IPC
+ipcMain.on('log-message', (event, message) => {
+    console.log(message);
+});
+
 // Controles da janela
 ipcMain.on('minimize-window', () => {
     mainWindow.minimize();
@@ -70,7 +75,9 @@ ipcMain.on('show-notification', (event, options) => {
     }).show();
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+    createWindow();
+});
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
